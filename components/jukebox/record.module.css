@@ -1,0 +1,105 @@
+.record {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  box-shadow:
+    0 18px 30px oklch(0% 0 0 / 0.55),
+    0 2px 4px oklch(0% 0 0 / 0.5);
+}
+
+/* Fixed sheen on top of the turning vinyl, the way light sits still on a real record. */
+.record::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background: conic-gradient(
+    from 20deg,
+    transparent 0deg,
+    oklch(100% 0 0 / 0.14) 30deg,
+    transparent 70deg,
+    transparent 180deg,
+    oklch(100% 0 0 / 0.1) 215deg,
+    transparent 255deg
+  );
+}
+
+.spin {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, transparent 0 25%, oklch(8% 0 0) 25% 26.5%, transparent 27%),
+    repeating-radial-gradient(circle, oklch(13% 0.005 20) 0 1.5px, oklch(18% 0.005 20) 2px 3px);
+  border: 3px solid oklch(8% 0 0);
+  animation: turn 14s linear infinite;
+  animation-play-state: paused;
+}
+
+:global([data-selected="true"]) .spin {
+  animation-play-state: running;
+}
+
+@keyframes turn {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+.label {
+  position: absolute;
+  inset: 21%;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-content: center;
+  gap: 0.2em;
+  padding: 14%;
+  text-align: center;
+  font-size: calc(var(--record, 240px) * 0.052);
+  color: oklch(20% 0.04 var(--hue));
+  background:
+    radial-gradient(circle, transparent 0 60%, oklch(100% 0 0 / 0.35) 60.5% 62%, transparent 62.5%),
+    oklch(78% 0.14 var(--hue));
+}
+
+.coverLabel {
+  background: oklch(13% 0.02 260);
+}
+
+.coverLabel img {
+  object-fit: contain;
+}
+
+/* A blurred copy of the cover fills the round label behind the full picture. */
+.coverLabel img.backdrop {
+  object-fit: cover;
+  filter: blur(6px) saturate(1.3);
+  scale: 1.2;
+}
+
+.labelTitle {
+  font-family: var(--font-sign);
+  line-height: 1.05;
+}
+
+.labelNote {
+  font-size: 0.8em;
+  font-weight: 600;
+}
+
+.spindle {
+  position: absolute;
+  inset: 48.5%;
+  border-radius: 50%;
+  background: var(--night-deep);
+  box-shadow: inset 0 1px 1px oklch(100% 0 0 / 0.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}

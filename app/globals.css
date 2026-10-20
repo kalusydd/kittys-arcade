@@ -1,26 +1,99 @@
 @import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-body);
+  --color-ring: var(--ring);
+  --color-border: var(--border);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Kitty's Arcade: a jukebox in an arcade at night. Always dark, so there is no light theme. */
+:root {
+  color-scheme: dark;
+
+  /* Night and wood */
+  --night: oklch(15% 0.035 15);
+  --night-deep: oklch(10% 0.025 15);
+  --night-glow: oklch(30% 0.09 20);
+  --wood: oklch(36% 0.075 42);
+  --wood-dark: oklch(24% 0.05 38);
+  --wood-light: oklch(48% 0.09 50);
+  --chrome-hi: oklch(96% 0.01 85);
+  --chrome-mid: oklch(74% 0.015 70);
+  --chrome-lo: oklch(46% 0.02 50);
+  --glass: oklch(12% 0.03 330);
+
+  /* Neon tubes */
+  --neon-orange: oklch(76% 0.18 55);
+  --neon-pink: oklch(70% 0.24 355);
+  --neon-yellow: oklch(91% 0.17 98);
+
+  /* Title strip card */
+  --strip: oklch(95% 0.03 85);
+  --strip-ink: oklch(24% 0.04 20);
+  --strip-ink-soft: oklch(40% 0.05 25);
+
+  --cream: oklch(95% 0.03 85);
+  --cream-soft: oklch(82% 0.04 70);
+
+  /* Arc and shadcn semantic tokens, mapped onto the arcade palette */
+  --background: var(--night);
+  --foreground: var(--cream);
+  --text-secondary: var(--cream-soft);
+  --accent: var(--neon-yellow);
+  --accent-strong: var(--neon-yellow);
+  --accent-foreground: var(--night);
+  --focus-outline: var(--neon-yellow);
+  --focus-outline-width: 3px;
+  --focus-outline-offset: 3px;
+  --border: oklch(100% 0 0 / 12%);
+  --ring: var(--neon-yellow);
+  --primary: var(--neon-orange);
+  --primary-foreground: var(--night);
+  --muted: var(--wood-dark);
+  --muted-foreground: var(--cream-soft);
+  --radius: 0.75rem;
+
+  --font-marquee: var(--font-monoton), sans-serif;
+  --font-sign: var(--font-bungee), sans-serif;
+  --font-body: var(--font-figtree), system-ui, sans-serif;
+}
+
+html {
+  background: var(--night-deep);
 }
 
 body {
-  background: var(--background);
+  font-family: var(--font-body);
+  background:
+    radial-gradient(120% 70% at 50% 110%, var(--night-glow), transparent 70%),
+    var(--night);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+::selection {
+  background: var(--neon-pink);
+  color: var(--night-deep);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
 }

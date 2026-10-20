@@ -1,0 +1,63 @@
+.screen {
+  position: fixed;
+  inset: 0;
+  background: var(--night-deep);
+}
+
+.frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Bottom left is the one corner Planet 13 keeps clear: its info bar runs along the top, sound sits bottom right. */
+.back {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--cream);
+  text-decoration: none;
+  background: oklch(10% 0.025 15 / 0.7);
+  border: 1px solid oklch(100% 0 0 / 0.16);
+  transition: background-color var(--duration-fast) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .back:hover {
+    background: oklch(10% 0.025 15 / 0.92);
+  }
+}
+
+.touchNote {
+  display: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .touchNote {
+    display: block;
+    position: absolute;
+    left: 50%;
+    bottom: 64px;
+    translate: -50% 0;
+    width: min(100% - 32px, 360px);
+    margin: 0;
+    padding: 14px 18px;
+    border-radius: 14px;
+    font-size: 1rem;
+    line-height: 1.4;
+    text-align: center;
+    color: var(--strip-ink);
+    background: var(--strip);
+    box-shadow: 0 10px 30px oklch(0% 0 0 / 0.5);
+    pointer-events: none;
+  }
+}

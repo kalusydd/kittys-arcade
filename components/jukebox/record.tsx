@@ -14,8 +14,8 @@ export function Record({ game, preload }: { game: Game; preload: boolean }) {
           </div>
         ) : (
           <div className={`${styles.label} ${styles.coverLabel}`}>
-            <Image src={game.cover} alt="" fill sizes="160px" preload={preload} className={styles.backdrop} />
-            <Image src={game.cover} alt="" fill sizes="160px" preload={preload} />
+            <Image src={game.cover} alt="" fill sizes="160px" preload={preload} draggable={false} className={styles.backdrop} />
+            <Image src={game.cover} alt="" fill sizes="160px" preload={preload} draggable={false} />
           </div>
         )}
         <span className={styles.spindle} />

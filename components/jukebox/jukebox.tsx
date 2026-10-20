@@ -47,6 +47,9 @@ type Drag = {
   samples: { x: number; t: number }[];
 };
 
+// Moves the selector by whole records from wherever it is now.
+const stepFrom = (delta: number) => (p: number) => Math.round(p) + delta;
+
 export function Jukebox({ games }: { games: Game[] }) {
   const n = games.length;
   const router = useRouter();
@@ -61,7 +64,6 @@ export function Jukebox({ games }: { games: Game[] }) {
   const selected = games[selectedIndex];
   const playHref = selected.comingSoon ? null : `/play/${selected.slug}`;
 
-  const step = (delta: number) => setPos((p) => Math.round(p) + delta);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -70,7 +72,7 @@ export function Jukebox({ games }: { games: Game[] }) {
       if (target.closest("input, textarea, select, [contenteditable]")) return;
       if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
         e.preventDefault();
-        setPos((p) => Math.round(p) + (e.key === "ArrowLeft" ? -1 : 1));
+        setPos(stepFrom(e.key === "ArrowLeft" ? -1 : 1));
       } else if (e.key === "Enter" && playHref && !target.closest("a, button")) {
         router.push(playHref);
       }
@@ -116,7 +118,10 @@ export function Jukebox({ games }: { games: Game[] }) {
     if (!d.moved) {
       // A tap on a neighbour brings it to the front.
       const slide = (e.target as HTMLElement).closest<HTMLElement>("[data-index]");
-      if (slide) setPos(Math.round(pos) + ringDistance(Number(slide.dataset.index), pos, n));
+      if (slide) {
+        const from = Math.round(pos);
+        setPos(from + ringDistance(Number(slide.dataset.index), from, n));
+      }
       return;
     }
 
@@ -138,6 +143,7 @@ export function Jukebox({ games }: { games: Game[] }) {
     setPos(Math.max(start - 3, Math.min(start + 3, target)));
   }
 
+  // Also runs when capture is lost mid-drag (say the window loses focus), so the ring never stays stuck between records.
   function onPointerCancel() {
     drag.current = null;
     setDragging(false);
@@ -166,6 +172,7 @@ export function Jukebox({ games }: { games: Game[] }) {
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerCancel}
+            onLostPointerCapture={onPointerCancel}
           >
             {/* Remounting on each pick lets reduced motion swap records with a fade. */}
             <div key={reduceMotion ? selectedIndex : "ring"} className={styles.ring}>
@@ -190,11 +197,11 @@ export function Jukebox({ games }: { games: Game[] }) {
             </div>
           </div>
 
-          <button type="button" className={`${styles.flick} ${styles.flickPrev}`} onClick={() => step(-1)}>
+          <button type="button" className={`${styles.flick} ${styles.flickPrev}`} onClick={() => setPos(stepFrom(-1))}>
             <ChevronLeft aria-hidden strokeWidth={3} />
             <span className="sr-only">Previous game</span>
           </button>
-          <button type="button" className={`${styles.flick} ${styles.flickNext}`} onClick={() => step(1)}>
+          <button type="button" className={`${styles.flick} ${styles.flickNext}`} onClick={() => setPos(stepFrom(1))}>
             <ChevronRight aria-hidden strokeWidth={3} />
             <span className="sr-only">Next game</span>
           </button>

@@ -11,6 +11,8 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: "html",
+  // The dev server compiles each route on its first visit, which can take a few seconds.
+  expect: { timeout: 10_000 },
   use: {
     baseURL: remoteURL ?? localURL,
     trace: "on-first-retry",

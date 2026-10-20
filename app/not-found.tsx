@@ -7,7 +7,7 @@ export default function NotFound() {
         <p className="font-[family-name:var(--font-sign)] text-6xl text-[var(--neon-pink)] [text-shadow:0_0_0.3em_var(--neon-pink)]">
           404
         </p>
-        <h1 className="font-[family-name:var(--font-sign)] text-2xl leading-tight">
+        <h1 className="text-3xl font-extrabold leading-tight tracking-tight">
           That record isn&apos;t in the jukebox
         </h1>
         <p className="text-[var(--cream-soft)]">
@@ -15,7 +15,7 @@ export default function NotFound() {
         </p>
         <Link
           href="/"
-          className="mt-2 rounded-full bg-[var(--neon-orange)] px-6 py-3 font-[family-name:var(--font-sign)] text-[var(--night-deep)] no-underline"
+          className="mt-2 rounded-full bg-[var(--neon-orange)] px-6 py-3 text-lg font-extrabold text-[var(--night-deep)] no-underline"
         >
           Back to the arcade
         </Link>

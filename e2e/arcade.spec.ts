@@ -54,7 +54,8 @@ test("a placeholder record says coming soon and cannot be played", async ({ page
   while ((await selectedTitle(page).textContent()) !== comingSoon!.title) {
     await page.getByRole("button", { name: "Next game" }).click();
   }
-  await expect(page.getByText("Coming soon.", { exact: false })).toBeVisible();
+  const selectedStrip = page.locator('section [data-selected="true"]');
+  await expect(selectedStrip.getByText("Coming soon.", { exact: false })).toBeVisible();
   await expect(page.getByRole("button", { name: "Coming soon" })).toBeDisabled();
   await expect(page.getByRole("link", { name: /^Play / })).toHaveCount(0);
 });
@@ -73,9 +74,11 @@ test("playing Planet 13 opens its play page and loads the game", async ({ page }
 
 test("Enter plays the selected game", async ({ page }) => {
   await page.goto("/");
-  // A round trip on the arrow keys proves the page is interactive before Enter is pressed.
-  await page.keyboard.press("ArrowRight");
-  await expect(selectedTitle(page)).toHaveText(second.title);
+  // Keys pressed before the page is interactive are lost, so retry until the selector responds.
+  await expect(async () => {
+    await page.keyboard.press("ArrowRight");
+    await expect(selectedTitle(page)).toHaveText(second.title, { timeout: 500 });
+  }).toPass();
   await page.keyboard.press("ArrowLeft");
   await expect(selectedTitle(page)).toHaveText(first.title);
   await page.keyboard.press("Enter");

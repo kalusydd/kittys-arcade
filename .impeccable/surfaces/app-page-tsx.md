@@ -19,7 +19,7 @@ STORY: The visitor sees Kat's arcade, understands each record is a game, flicks 
 
 FIRST VIEWPORT: Cabinet centered, arch on top holding the "Kitty's Arcade" neon marquee. Below it the glass record window with the selected record front and center, two neighbors each side angled away. Chunky chrome left and right buttons flank the window. Under the window, the title strip (selection code, title, description) and the big rounded Play push button, all visible at 1440x900 without scrolling.
 
-FORM: Pinned by the brief (1980s jukebox in an arcade at night), so no roll was used. seed: none (unavailable)
+FORM: Pinned by the user's brief (a 1980s jukebox in an arcade at night). concept-seed was deliberately not run because a pinned direction beats the roll. seed: none (unavailable)
 
 Signature interaction: the record flick. Drag or swipe with momentum, arrow keys and buttons; neighbors swing in perspective on Arc's spring curve, the selected record turns slowly.
 

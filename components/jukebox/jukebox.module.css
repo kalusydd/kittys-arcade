@@ -9,15 +9,12 @@
 
 .arch,
 .body {
-  --wood-grain: repeating-linear-gradient(
-      93deg,
-      oklch(100% 0 0 / 0.03) 0 2px,
-      transparent 2px 9px,
-      oklch(0% 0 0 / 0.06) 9px 11px,
-      transparent 11px 17px
-    ),
-    linear-gradient(90deg, var(--wood-dark), var(--wood) 18%, var(--wood-light) 50%, var(--wood) 82%, var(--wood-dark));
-  --chrome: linear-gradient(90deg, var(--chrome-lo), var(--chrome-hi) 30%, var(--chrome-mid) 60%, var(--chrome-hi) 80%, var(--chrome-lo));
+  /* Walnut figure: stretched noise drawn as dark grain lines over the base tone. */
+  --wood-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='480'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.11 0.006' numOctaves='4' seed='13'/%3E%3CfeColorMatrix values='0 0 0 0 0.12 0 0 0 0 0.05 0 0 0 0 0.02 0 0 0 2.2 -0.85'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"),
+    linear-gradient(90deg, oklch(0% 0 0 / 0.35), transparent 14% 86%, oklch(0% 0 0 / 0.35)),
+    linear-gradient(90deg, var(--wood), var(--wood-light) 50%, var(--wood));
+  /* Chrome reads as metal from its hard horizon: bright sky above, dark ground below, a warm neon kick at the bottom. */
+  --chrome: linear-gradient(90deg, var(--chrome-dark), var(--chrome-hi) 8%, var(--chrome-mid) 16%, var(--chrome-dark) 24%, var(--chrome-hi) 50%, var(--chrome-dark) 76%, var(--chrome-mid) 84%, var(--chrome-hi) 92%, var(--chrome-dark));
   border: 1.4cqi solid transparent;
   background:
     var(--wood-grain) padding-box,
@@ -92,6 +89,7 @@
   border-radius: 0 0 5cqi 5cqi;
   padding: 3.5cqi 6cqi 5cqi;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 4cqi;
 }
 
@@ -100,7 +98,7 @@
   position: relative;
   padding: 1.3cqi;
   border-radius: 4cqi;
-  background: linear-gradient(180deg, var(--chrome-hi), var(--chrome-lo) 55%, var(--chrome-mid));
+  background: linear-gradient(180deg, var(--chrome-hi), var(--chrome-mid) 46%, var(--chrome-dark) 50%, var(--chrome-mid) 78%, oklch(78% 0.08 30));
   box-shadow: 0 0.8cqi 1.6cqi oklch(0% 0 0 / 0.45);
 }
 
@@ -165,10 +163,11 @@
   width: max(44px, 12cqi);
   aspect-ratio: 1;
   border-radius: 50%;
-  border: 0.5cqi solid var(--chrome-lo);
+  border: 0.5cqi solid var(--chrome-dark);
   background:
-    radial-gradient(circle at 35% 30%, var(--chrome-hi), var(--chrome-mid) 55%, var(--chrome-lo));
-  color: var(--wood-dark);
+    radial-gradient(circle at 36% 26%, oklch(100% 0 0 / 0.9) 0 7%, transparent 18%),
+    linear-gradient(180deg, var(--chrome-hi) 0 40%, var(--chrome-dark) 52%, var(--chrome-lo) 66%, var(--chrome-mid) 82%, oklch(80% 0.09 35));
+  color: var(--night-deep);
   box-shadow:
     inset 0 -0.6cqi 0.8cqi oklch(0% 0 0 / 0.25),
     0 1cqi 2cqi oklch(0% 0 0 / 0.55);
@@ -203,7 +202,7 @@
 /* Wide cabinets put a big round select button beside the strip, like a real jukebox. */
 @container (min-width: 440px) {
   .panel {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
   }
 
@@ -212,8 +211,8 @@
     min-width: 0;
     aspect-ratio: 1;
     padding: 1em;
-    font-size: 3.5cqi;
-    line-height: 1.1;
+    font-size: 3.6cqi;
+    line-height: 1.05;
   }
 }
 
@@ -232,12 +231,22 @@
   box-shadow: 0 0.6cqi 1.4cqi oklch(0% 0 0 / 0.4);
 }
 
-.stripContent {
+.strip {
   display: grid;
-  grid-template-columns: auto 1fr;
+}
+
+.stripContent {
+  grid-area: 1 / 1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
   gap: 3.5cqi;
   padding: 3.6cqi 4cqi;
+  visibility: hidden;
+}
+
+.stripContent[data-selected="true"] {
+  visibility: visible;
   animation: strip-in var(--duration-fast) var(--ease-enter);
 }
 
@@ -260,10 +269,10 @@
 
 .title {
   margin: 0;
-  font-family: var(--font-sign);
-  font-weight: 400;
-  font-size: max(1.05rem, 3.6cqi);
-  line-height: 1.15;
+  font-weight: 800;
+  font-size: max(1.1rem, 4cqi);
+  line-height: 1.12;
+  letter-spacing: -0.01em;
   text-wrap: balance;
 }
 
@@ -274,6 +283,20 @@
   line-height: 1.45;
   color: var(--strip-ink-soft);
   text-wrap: pretty;
+}
+
+.keyboardNote {
+  display: none;
+  margin: 0.6em 0 0;
+  font-size: max(0.9rem, 2.6cqi);
+  font-weight: 700;
+  color: var(--strip-ink);
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .keyboardNote {
+    display: block;
+  }
 }
 
 .description strong {
@@ -289,8 +312,9 @@
   padding: 0.95em 1.8em 0.85em;
   border: 0;
   border-radius: 999px;
-  font-family: var(--font-sign);
-  font-size: max(1.05rem, 4.6cqi);
+  font-weight: 800;
+  font-size: max(1.1rem, 4.8cqi);
+  letter-spacing: -0.01em;
   line-height: 1;
   text-align: center;
   text-decoration: none;
@@ -310,9 +334,10 @@
   scale: 0.97;
 }
 
+/* An unlit button: dark plastic with no neon behind it. */
 .play:disabled {
   color: var(--cream-soft);
-  background: linear-gradient(180deg, var(--wood-light), var(--wood-dark));
+  background: linear-gradient(180deg, oklch(34% 0.03 30), oklch(22% 0.02 25));
   box-shadow:
     inset 0 0.5cqi 0 oklch(100% 0 0 / 0.12),
     0 1cqi 2cqi oklch(0% 0 0 / 0.4);
@@ -330,9 +355,11 @@
   height: 8cqi;
   border-radius: 2.2cqi;
   border: 1cqi solid var(--chrome-mid);
+  /* Chrome bars over a speaker lit from behind by the cabinet's neon. */
   background:
-    linear-gradient(180deg, oklch(0% 0 0 / 0.35), transparent 40%, oklch(0% 0 0 / 0.35)),
-    repeating-linear-gradient(90deg, var(--chrome-mid) 0 0.7cqi, var(--wood-dark) 0.7cqi 2.6cqi);
+    linear-gradient(180deg, var(--chrome-hi), var(--chrome-dark) 55%, var(--chrome-mid)) 0 0 / 0.8cqi 100% space,
+    linear-gradient(90deg, oklch(45% 0.16 355), oklch(52% 0.15 50) 50%, oklch(45% 0.16 355));
+  background-clip: padding-box;
 }
 
 @media (prefers-reduced-motion: reduce) {

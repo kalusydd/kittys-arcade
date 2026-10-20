@@ -208,22 +208,31 @@ export function Jukebox({ games }: { games: Game[] }) {
         </div>
 
         <div className={styles.panel}>
-          <section className={styles.strip} aria-labelledby="selected-title" aria-live="polite">
-            <div key={selected.slug} className={styles.stripContent}>
-              <p className={styles.code}>
-                <span className="sr-only">Selection </span>
-                {selected.code}
-              </p>
-              <div>
-                <h2 id="selected-title" className={styles.title}>
-                  {selected.title}
-                </h2>
-                <p className={styles.description}>
-                  {selected.comingSoon ? <strong>Coming soon. </strong> : null}
-                  {selected.description}
-                </p>
-              </div>
-            </div>
+          <p className="sr-only" aria-live="polite">
+            {`Selection ${selected.code}, ${selected.title}. ${selected.comingSoon ? "Coming soon." : "Ready to play."}`}
+          </p>
+          {/* Every strip is stacked in one cell so the panel is always as tall as the longest one and nothing below it jumps. */}
+          <section className={styles.strip} aria-labelledby="selected-title">
+            {games.map((game, i) => {
+              const isSelected = i === selectedIndex;
+              return (
+                <div key={game.slug} className={styles.stripContent} data-selected={isSelected} aria-hidden={!isSelected}>
+                  <p className={styles.code}>{game.code}</p>
+                  <div>
+                    <h2 id={isSelected ? "selected-title" : undefined} className={styles.title}>
+                      {game.title}
+                    </h2>
+                    <p className={styles.description}>
+                      {game.comingSoon ? <strong>Coming soon. </strong> : null}
+                      {game.description}
+                    </p>
+                    {!game.comingSoon && game.needsKeyboard ? (
+                      <p className={styles.keyboardNote}>Needs a keyboard, so it plays best on a laptop.</p>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
           </section>
 
           {playHref ? (

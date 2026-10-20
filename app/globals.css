@@ -37,6 +37,7 @@
   --chrome-hi: oklch(96% 0.01 85);
   --chrome-mid: oklch(74% 0.015 70);
   --chrome-lo: oklch(46% 0.02 50);
+  --chrome-dark: oklch(28% 0.015 40);
   --glass: oklch(12% 0.03 330);
 
   /* Neon tubes */

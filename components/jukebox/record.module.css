@@ -53,10 +53,12 @@
   inset: 21%;
   border-radius: 50%;
   overflow: hidden;
-  display: grid;
-  place-content: center;
-  gap: 0.2em;
-  padding: 14%;
+  /* Title above the spindle hole and the note below it, like a printed 45 label. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 17% 12% 18%;
   text-align: center;
   font-size: calc(var(--record, 240px) * 0.052);
   color: oklch(20% 0.04 var(--hue));
@@ -69,8 +71,10 @@
   background: oklch(13% 0.02 260);
 }
 
+/* Lifted so the spindle hole sits below the game's wordmark. */
 .coverLabel img {
   object-fit: contain;
+  object-position: 50% 12%;
 }
 
 /* A blurred copy of the cover fills the round label behind the full picture. */

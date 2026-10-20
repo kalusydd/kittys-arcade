@@ -30,5 +30,5 @@ Use Node 24 (`nvm use`, pinned in `.nvmrc` and `package.json` engines). Tool she
 - `next.config.ts` runs Tailwind as a Turbopack loader on `*.css`. CSS modules must stay excluded from that rule, or their class names stop working.
 - Cache Components is on, so `dynamicParams` is not available. The play page uses `generateStaticParams` plus `notFound()`, and `instant = false` to stop a dev-only validation warning on unknown slugs.
 - Arc's `foundation.css` and shadcn both define `--background`, `--accent` and friends. `app/globals.css` is imported after Arc and maps them onto the arcade palette.
-- The GitHub repo's default branch is `master`.
+- The default branch is `main` on GitHub, and Vercel's production branch is `main` too.
 - `.claude/launch.json` here is ignored by the desktop preview tool, which reads `/Users/katsydd/code/Games/.claude/launch.json` (leave that file alone). Run the dev server in the background instead.

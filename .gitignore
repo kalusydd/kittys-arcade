@@ -48,3 +48,6 @@ next-env.d.ts
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# Impeccable review captures
+/.impeccable/review/

@@ -42,6 +42,14 @@
 }
 
 @media (hover: none) and (pointer: coarse) {
+  /* The game's footer wraps on narrow touch screens, and nobody is playing here, so the top corner is free. */
+  .back {
+    top: 12px;
+    bottom: auto;
+    min-height: 44px;
+    padding-inline: 16px;
+  }
+
   .touchNote {
     display: block;
     position: absolute;

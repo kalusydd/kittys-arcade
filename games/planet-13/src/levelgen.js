@@ -90,16 +90,28 @@ export function generateLevel(index, seed) {
     const mg = maxGap(dy);
     return Math.max(Math.min(P.gapMin, mg), r.range(P.gapMin, Math.max(P.gapMin, mg)));
   };
+  // Danger budget: each threat claims the stretch of level it covers, and nothing else may be placed
+  // in it or within THREAT_GAP of it, so two dangers never guard the same jump.
+  const threats = [];
+  const THREAT_GAP = 3;
+  function claim(x0, x1) {
+    if (threats.some(([a, b]) => x0 < b + THREAT_GAP && x1 > a - THREAT_GAP)) return false;
+    threats.push([x0, x1]);
+    return true;
+  }
+  L.threats = threats;
   function addWalker(x0, x1, top) {
-    if (x1 - x0 < 2.5) return;
+    if (x1 - x0 < 2.5 || !claim(x0 - 0.5, x1 + 0.5)) return;
     L.enemies.push({ type: 'walker', x: r.range(x0, x1), y: top, minX: x0, maxX: x1, speed: P.enemySpeed * r.range(0.85, 1.15), dir: r.sign() });
     L.features.add('walker');
   }
   function addFlyer(cx, cy, ax, ay) {
+    if (!claim(cx - ax - 0.6, cx + ax + 0.6)) return;
     L.enemies.push({ type: 'flyer', x: cx, y: cy, ax, ay, period: lerp(5.5, 3.6, D) * r.range(0.9, 1.15), phase: r.range(0, Math.PI * 2) });
     L.features.add('flyer');
   }
   function addLeaper(cx, peak) {
+    if (!claim(cx - 1.2, cx + 1.2)) return;
     const period = lerp(3.4, 2.5, D) * r.range(0.95, 1.1);
     L.enemies.push({ type: 'leaper', x: cx, y: SEA_Y, peak, period, phase: r.range(0, period) });
     L.features.add('leaper');
@@ -122,14 +134,18 @@ export function generateLevel(index, seed) {
       } else if (feature === 'spikes') {
         const w = r.range(1.2, lerp(1.6, 2.6, D));
         const sx = clamp(mid - w / 2 + r.range(-1, 1), x0 + 3, x1 - 3 - w);
-        L.hazards.push({ type: 'spikes', x: sx, y, w });
-        L.features.add('spikes');
+        if (claim(sx, sx + w)) {
+          L.hazards.push({ type: 'spikes', x: sx, y, w });
+          L.features.add('spikes');
+        }
         coinArc(sx - 1.2, y, sx + w + 1.2, y, 3, 1.4);
       } else if (feature === 'geyser') {
         const w = 1.3, gx = clamp(mid - w / 2 + r.range(-1.5, 1.5), x0 + 3, x1 - 3 - w);
         const period = lerp(3.6, 2.7, D);
-        L.hazards.push({ type: 'geyser', x: gx, y, w, h: r.range(5.5, 7), period, on: lerp(0.9, 1.15, D), phase: r.range(0, period) });
-        L.features.add('geyser');
+        if (claim(gx, gx + w)) {
+          L.hazards.push({ type: 'geyser', x: gx, y, w, h: r.range(5.5, 7), period, on: lerp(0.9, 1.15, D), phase: r.range(0, period) });
+          L.features.add('geyser');
+        }
         coinRow(x0 + 1, gx - 1, y + 1.0, 2);
       } else {
         coinRow(mid - 2.4, mid + 2.4, y + 1.0, r.int(3, 5));
@@ -288,6 +304,7 @@ export function generateLevel(index, seed) {
       ax = x + 9; ay = y + 4.4 + 1.3;
     }
     L.artifact = { x: ax, y: ay };
+    L.checkpoint = { x: x + 1.5, y };
     coinRow(x + 1.5, x + 3.5, y + 1.0, 2);
     if (D >= 0.3) addFlyer(x + 7.5, y + 2.4, 4, 1.1);
     x += len;
@@ -343,7 +360,12 @@ export function generateLevel(index, seed) {
   if (P.chaser) {
     const cands = L.segments.filter((s) => s.ground && s.x0 > P.length * 0.25 && s.x1 - s.x0 > 5);
     const n = index >= 8 ? 2 : 1;
-    for (const s of r.shuffle(cands).slice(0, n)) {
+    let placed = 0;
+    for (const s of r.shuffle(cands)) {
+      if (placed >= n) break;
+      const hx = (s.x0 + s.x1) / 2;
+      if (!claim(hx - 4, hx + 4)) continue;
+      placed++;
       L.enemies.push({ type: 'chaser', x: (s.x0 + s.x1) / 2, y: s.y + 3.6, speed: lerp(2.4, 3.4, D) });
       L.features.add('chaser');
     }
@@ -378,6 +400,9 @@ export function validateLevel(L) {
     else if (gap > airReach(dy) * 0.85) problems.push(`gap too wide ${gap.toFixed(2)} (dy ${dy.toFixed(2)}) at x=${j.fx.toFixed(1)}`);
   }
   if (!L.artifact) problems.push('no artifact');
+  if (!L.checkpoint) problems.push('no checkpoint');
+  const t = L.threats.slice().sort((a, b) => a[0] - b[0]);
+  for (let i = 1; i < t.length; i++) if (t[i][0] < t[i - 1][1] + 2.99) problems.push(`threats too close at x=${t[i][0].toFixed(1)}`);
   if (!L.portal) problems.push('no portal');
   if (L.artifact && L.artifact.x > L.portal.x) problems.push('artifact after portal');
   return problems;

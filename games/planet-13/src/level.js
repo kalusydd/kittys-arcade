@@ -155,6 +155,7 @@ export class LevelRuntime {
     // ---------- decor
     this.buildDecor(r, pal, world, layout);
 
+    this.checkpoint = null;
     this.reset();
   }
 
@@ -195,19 +196,26 @@ export class LevelRuntime {
   }
 
   // full restart of the current level (same layout)
-  reset() {
+  // Restarts the world. After the artifact is taken, the player respawns at the shrine with the
+  // artifact kept and the coins from before the checkpoint still collected.
+  saveCheckpoint() {
+    this.checkpoint = { coins: new Set(this.coinViews.filter((c) => c.taken).map((c) => c.id)) };
+  }
+  reset(fromCheckpoint = false) {
+    const cp = fromCheckpoint ? this.checkpoint : null;
+    if (!fromCheckpoint) this.checkpoint = null;
     this.time = 0;
     for (const s of this.solids) {
       s.x = s.bx; s.y = s.by; s.active = true; s.state = 'idle'; s.timer = 0; s.dx = s.dy = 0;
       if (s.mesh) { s.mesh.visible = true; s.mesh.position.set(s.x + s.w / 2, s.y + s.h, s.z); s.mesh.rotation.z = 0; if (s.kind === 'crumble') s.mesh.material.userData.uniforms.uShake.value = 0; }
     }
-    for (const c of this.coinViews) { c.taken = false; c.mesh.visible = true; c.mesh.scale.setScalar(c.mega ? 1.6 : 1); c.mesh.position.set(c.x, c.y, 0); }
+    for (const c of this.coinViews) { c.taken = !!cp && cp.coins.has(c.id); c.mesh.visible = !c.taken; c.mesh.scale.setScalar(c.mega ? 1.6 : 1); c.mesh.position.set(c.x, c.y, 0); }
     for (const e of this.enemies) { e.x = e.def.x; e.y = e.def.y; e.dir = e.def.dir || 1; e.vx = 0; }
-    this.artifact.taken = false; this.artifact.anim = 0;
-    this.artifactMesh.visible = true; this.artifactMesh.position.set(this.artifact.x, this.artifact.y, 0); this.artifactMesh.scale.setScalar(1.25);
-    this.artifactBeam.visible = true; this.artifactLight.visible = true;
-    this.portal.active = false; this.portal.level = 0;
-    const st = this.L.start;
+    this.artifact.taken = !!cp; this.artifact.anim = 0;
+    this.artifactMesh.visible = !cp; this.artifactMesh.position.set(this.artifact.x, this.artifact.y, 0); this.artifactMesh.scale.setScalar(1.25);
+    this.artifactBeam.visible = !cp; this.artifactLight.visible = !cp;
+    this.portal.active = !!cp; this.portal.level = cp ? 1 : 0;
+    const st = cp ? this.L.checkpoint : this.L.start;
     this.player = {
       x: st.x, y: st.y, vx: 0, vy: 0, grounded: true, coyote: 0, buffer: 0, facing: 1, standing: null,
       jumping: false, invuln: 0, landed: 0, lastSafe: { x: st.x, y: st.y }, dead: false, frozen: false,
@@ -417,7 +425,7 @@ export class LevelRuntime {
         const vx = tx - e.x, vy = ty - e.y, l = Math.hypot(vx, vy) || 1;
         const step = Math.min(l, sp * dt);
         e.x += (vx / l) * step; e.y += (vy / l) * step + Math.sin(t * 3 + d.x) * 0.01;
-        e.x = clamp(e.x, d.x - 10, d.x + 10); e.y = clamp(e.y, d.y - 3.5, d.y + 3);
+        e.x = clamp(e.x, d.x - 4, d.x + 4); // stays inside the stretch it claimed in levelgen e.y = clamp(e.y, d.y - 3.5, d.y + 3);
       }
       e.vx = (e.x - ox) / Math.max(dt, 1e-4);
       if (Math.abs(e.vx) > 0.05) e.dir = Math.sign(e.vx);

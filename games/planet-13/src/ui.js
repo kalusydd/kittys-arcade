@@ -228,7 +228,7 @@ export const UI = {
     $('.lv', s).textContent = String(d.level + 1).padStart(2, '0');
     $('.wn', s).textContent = d.worldName;
     $('.wt', s).textContent = 'WORLD ' + (d.level + 1) + ' OF 10';
-    $('.lives', s).innerHTML = [0, 1, 2].map((i) => `<div class="life ${i < d.lives ? '' : 'off'}"></div>`).join('');
+    $('.lives', s).innerHTML = Array.from({ length: d.maxLives }, (_, i) => i).map((i) => `<div class="life ${i < d.lives ? '' : 'off'}"></div>`).join('');
     const cv = $('.cv', s);
     if (cv.textContent !== String(d.credits)) {
       cv.textContent = d.credits;
@@ -281,9 +281,9 @@ export const UI = {
     const s = this.screens.shop;
     $('.bv', s).textContent = d.credits;
     const life = $('[data-act="buylife"]', s), shield = $('[data-act="buyshield"]', s);
-    life.disabled = d.lives >= 3 || d.credits < 25;
+    life.disabled = d.lives >= d.maxLives || d.credits < 25;
     shield.disabled = d.shield || d.credits < 15;
-    life.innerHTML = d.lives >= 3 ? 'Lives full' : 'Buy · <span class="price">25 P13</span>';
+    life.innerHTML = d.lives >= d.maxLives ? 'Lives full' : 'Buy · <span class="price">25 P13</span>';
     shield.innerHTML = d.shield ? 'Equipped' : 'Buy · <span class="price">15 P13</span>';
     $('.dest', s).innerHTML = d.nextLabel;
     if (this.focused && this.focused.disabled) this.focus($('[data-act="continue"]', s));

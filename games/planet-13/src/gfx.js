@@ -200,7 +200,7 @@ export function celestialMaterial(kind, a, b) {
           col = mix(col, vec3(0.05), max(hand1, hand2)); }
         float lit = clamp(dot(vN, normalize(vec3(-0.5, 0.6, 0.7))) * 0.8 + 0.35, 0.12, 1.1);
         col *= lit;
-        float rim = pow(1.0 - max(0.0, dot(vN, vV)), 3.0);
+        float rim = pow(clamp(1.0 - dot(vN, vV), 0.0, 1.0), 3.0);
         col += uA * rim * 0.9;
         gl_FragColor = vec4(col, 1.0);
       }`,
@@ -268,9 +268,9 @@ export function beamMaterial(color, strength = 1) {
     uniforms: { uColor: { value: new THREE.Color(color) }, uTime: { value: 0 }, uStrength: { value: strength } },
     vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
     fragmentShader: /* glsl */ `varying vec2 vUv; uniform vec3 uColor; uniform float uTime, uStrength; ${GLSL_NOISE}
-      void main(){ float edge = pow(sin(vUv.x*3.14159), 2.0);
+      void main(){ float edge = pow(max(0.0, sin(vUv.x*3.14159)), 2.0);
         float n = 0.6 + 0.4*vnoise(vec2(vUv.x*6.0, vUv.y*8.0 - uTime*2.0));
-        float a = edge * pow(1.0 - vUv.y, 1.6) * n * uStrength;
+        float a = edge * pow(max(0.0, 1.0 - vUv.y), 1.6) * n * uStrength;
         gl_FragColor = vec4(uColor * a, a); }`,
   });
 }
@@ -280,7 +280,7 @@ export function geyserMaterial(color) {
     uniforms: { uColor: { value: new THREE.Color(color) }, uTime: { value: 0 }, uOn: { value: 0 } },
     vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
     fragmentShader: /* glsl */ `varying vec2 vUv; uniform vec3 uColor; uniform float uTime, uOn; ${GLSL_NOISE}
-      void main(){ float edge = pow(sin(vUv.x*3.14159), 1.5);
+      void main(){ float edge = pow(max(0.0, sin(vUv.x*3.14159)), 1.5);
         float n = fbm(vec2(vUv.x*5.0, vUv.y*4.0 - uTime*5.0));
         float a = edge * smoothstep(0.2, 0.8, n + 0.3) * smoothstep(1.0, 0.75, vUv.y) * uOn;
         vec3 c = mix(uColor, vec3(1.0), smoothstep(0.6, 0.9, n));
@@ -438,6 +438,16 @@ export function ambientParticles(count = 500) {
 }
 
 // ---------------------------------------------------------------- post FX
+// Bloom blurs neighbouring pixels together, so a single NaN/Infinity pixel grows into a black block.
+const SanitizeShader = {
+  uniforms: { tDiffuse: { value: null } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader: `varying vec2 vUv; uniform sampler2D tDiffuse;
+    void main(){ vec4 c = texture2D(tDiffuse, vUv);
+      bool bad = any(isnan(c)) || any(isinf(c)) || c.r != c.r || c.g != c.g || c.b != c.b;
+      gl_FragColor = bad ? vec4(0.0, 0.0, 0.0, 1.0) : min(c, vec4(64.0)); }`,
+};
+
 const FinalShader = {
   uniforms: {
     tDiffuse: { value: null }, uTime: { value: 0 }, uRes: { value: new THREE.Vector2(1, 1) },
@@ -490,6 +500,7 @@ export function createRenderer(canvas) {
   const rt = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: 4 });
   const composer = new EffectComposer(renderer, rt);
   composer.addPass(new RenderPass(scene, camera));
+  composer.addPass(new ShaderPass(SanitizeShader));
   const bloom = new UnrealBloomPass(new THREE.Vector2(size.x, size.y), 0.55, 0.45, 0.92);
   composer.addPass(bloom);
   composer.addPass(new OutputPass());

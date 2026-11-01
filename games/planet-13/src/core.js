@@ -19,6 +19,7 @@ export const PHYS = {
 
 export const SEA_Y = -2.6;      // the lethal liquid surface that fills every world's lowlands
 export const MAX_LEVELS = 10;
+export const MAX_LIVES = 5;
 
 // Horizontal distance travelled at full speed during a full-height jump that lands dy higher.
 export function airReach(dy) {

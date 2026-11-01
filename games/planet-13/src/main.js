@@ -9,7 +9,7 @@ import { createCharacter, createArtifact, createPedestal } from './models.js';
 import { CHARACTERS, REGISTRY } from './content.js';
 import { audio } from './audio.js';
 import { UI } from './ui.js';
-import { hashString, PHYS, SEA_Y, damp, clamp, lerp } from './core.js';
+import { hashString, PHYS, SEA_Y, MAX_LIVES, damp, clamp, lerp } from './core.js';
 
 const canvas = document.getElementById('gl');
 const { renderer, scene, camera, composer, bloom, final, adapt } = createRenderer(canvas);
@@ -84,14 +84,14 @@ const shieldBubble = new THREE.Mesh(new THREE.SphereGeometry(0.9, 32, 20), new T
   uniforms: { uTime: { value: 0 }, uColor: { value: new THREE.Color('#3affe8') } },
   vertexShader: `varying vec3 vN; varying vec3 vV; varying vec3 vP; void main(){ vN = normalize(normalMatrix*normal); vec4 mv = modelViewMatrix*vec4(position,1.0); vV = normalize(-mv.xyz); vP = position; gl_Position = projectionMatrix*mv; }`,
   fragmentShader: `varying vec3 vN; varying vec3 vV; varying vec3 vP; uniform float uTime; uniform vec3 uColor; ${GLSL_NOISE}
-    void main(){ float f = pow(1.0 - abs(dot(vN, vV)), 2.5); float hex = 0.5+0.5*sin(vP.y*30.0 + uTime*4.0)*sin(vP.x*26.0);
+    void main(){ float f = pow(clamp(1.0 - abs(dot(normalize(vN), normalize(vV))), 0.0, 1.0), 2.5); float hex = 0.5+0.5*sin(vP.y*30.0 + uTime*4.0)*sin(vP.x*26.0);
       float a = f * 0.9 + hex*0.05; gl_FragColor = vec4(uColor * a * 1.8, a); }`,
 }));
 shieldBubble.position.y = 0.6;
 
 // ================================================================ state
 const S = {
-  state: 'boot', t: 0, seed: 0, worlds: [], levelIndex: 0, lives: 3, credits: 0, creditsAtStart: 0, shield: false,
+  state: 'boot', t: 0, seed: 0, worlds: [], levelIndex: 0, lives: MAX_LIVES, credits: 0, creditsAtStart: 0, creditsAtCheckpoint: 0, lostCredits: 0, shield: false,
   artifacts: [], creditsTotal: 0, deaths: 0, charIndex: 0, timer: 0, levelTime: 0,
 };
 const cam = { x: 0, y: 2, groundY: 0, look: 0, shake: 0, fly: null };
@@ -127,7 +127,7 @@ function toTitle() {
 async function startExpedition() {
   S.seed = (Math.random() * 1e9) >>> 0;
   S.worlds = generateExpedition(S.seed);
-  Object.assign(S, { levelIndex: 0, lives: 3, credits: 0, creditsAtStart: 0, shield: false, artifacts: [], creditsTotal: 0, deaths: 0 });
+  Object.assign(S, { levelIndex: 0, lives: MAX_LIVES, credits: 0, creditsAtStart: 0, creditsAtCheckpoint: 0, lostCredits: 0, shield: false, artifacts: [], creditsTotal: 0, deaths: 0 });
   S.state = 'intro';
   UI.show('intro');
   const term = UI.terms.intro;
@@ -196,6 +196,8 @@ function loadLevel(i) {
   env.apply(w.palette, w.celestial, w.particles);
   setStage('level');
   S.creditsAtStart = S.credits;
+  S.creditsAtCheckpoint = S.credits;
+  final.uniforms.uWarp.value = 0;
   placePlayer();
   // briefing: camera glides from the portal back to the start
   S.state = 'briefing';
@@ -226,7 +228,7 @@ function beginLevel() {
 }
 
 function updateHud() {
-  UI.hud({ level: S.levelIndex, worldName: S.worlds[S.levelIndex]?.name || '', lives: S.lives, credits: S.credits, artifact: level.artifact?.taken, shield: S.shield });
+  UI.hud({ level: S.levelIndex, worldName: S.worlds[S.levelIndex]?.name || '', lives: S.lives, maxLives: MAX_LIVES, credits: S.credits, artifact: level.artifact?.taken, shield: S.shield });
 }
 
 // ---------------------------------------------------------------- level events
@@ -247,6 +249,8 @@ level.on('coin', (c) => {
 });
 level.on('artifact', () => {
   S.state = 'artifact';
+  level.saveCheckpoint();
+  S.creditsAtCheckpoint = S.credits;
   audio.artifact();
   audio.duckMusic(true);
   cam.shake = 0.3;
@@ -293,7 +297,9 @@ function die() {
   S.timer = 0;
   S.lives -= 1;
   S.deaths += 1;
-  S.credits = S.creditsAtStart;
+  const back = level.checkpoint ? S.creditsAtCheckpoint : S.creditsAtStart;
+  S.lostCredits = S.credits - back;
+  S.credits = back;
   p.dead = true;
   audio.die();
   cam.shake = 0.6;
@@ -306,11 +312,15 @@ function die() {
 
 function afterDeath() {
   if (S.lives <= 0) return toGameOver();
-  level.reset();
+  const fromCheckpoint = !!level.checkpoint;
+  level.reset(fromCheckpoint);
   placePlayer();
   level.player.invuln = 1.0;
   S.state = 'playing';
-  UI.toast(`LIFE LOST · ${S.lives} REMAINING`, 'warn', pickLine(REGISTRY.death) + (S.credits !== level.creditsThisRun ? ' Credits from this attempt were confiscated.' : ''), 3);
+  const notes = [pickLine(REGISTRY.death)];
+  if (fromCheckpoint) notes.push('Respawned at the artifact shrine.');
+  if (S.lostCredits > 0) notes.push('Credits from this attempt were confiscated.');
+  UI.toast(`LIFE LOST · ${S.lives} REMAINING`, 'warn', notes.join(' '), 3);
   updateHud();
 }
 
@@ -334,12 +344,12 @@ function toShop() {
 }
 function refreshShop() {
   const nw = S.worlds[S.levelIndex + 1];
-  UI.shop({ credits: S.credits, lives: S.lives, shield: S.shield, nextLabel: `Next destination: <b>${nw.name}</b> · world ${S.levelIndex + 2} of 10` });
+  UI.shop({ credits: S.credits, lives: S.lives, maxLives: MAX_LIVES, shield: S.shield, nextLabel: `Next destination: <b>${nw.name}</b> · world ${S.levelIndex + 2} of 10` });
 }
 function buy(item) {
   const t = UI.terms.shop;
   if (item === 'life') {
-    if (S.lives >= 3) { audio.deny(); return t.say(REGISTRY.full[0]); }
+    if (S.lives >= MAX_LIVES) { audio.deny(); return t.say(REGISTRY.full[0]); }
     if (S.credits < 25) { audio.deny(); return t.say(pickLine(REGISTRY.deny)); }
     S.credits -= 25; S.lives += 1; audio.buy(); t.say(pickLine(REGISTRY.buyLife));
   } else {
@@ -419,7 +429,7 @@ UI.init({
       case 'next': updateSelect(1); break;
       case 'choose': if (S.state === 'select') { S.state = 'chosen'; chooseCharacter(); } break;
       case 'begin': if (S.state === 'briefing') beginLevel(); break;
-      case 'artok': if (S.state === 'artifact') startPortalCinematic(); break;
+      case 'artok': if (S.state === 'artifact') awakenPortal(); break;
       case 'buylife': buy('life'); break;
       case 'buyshield': buy('shield'); break;
       case 'continue': if (S.state === 'shop') leaveShop(); break;
@@ -433,11 +443,17 @@ UI.init({
   },
 });
 
-function startPortalCinematic() {
+function awakenPortal() {
   UI.show('hud');
-  S.state = 'cinematic';
-  S.timer = 0;
+  S.state = 'playing';
   level.artifact.anim = Math.max(level.artifact.anim, 3); // artifact absorbs into the ambassador
+  level.activatePortal();
+  level.player.invuln = 2; // grace period: predators may be close by when play resumes
+  audio.portalOn();
+  audio.duckMusic(false);
+  cam.shake = 0.3;
+  UI.toast('THE PORTAL HAS AWAKENED', 'gold', 'Checkpoint saved. Follow the arrow to the wormhole.', 2.8);
+  updateHud();
 }
 
 function togglePause(on) {
@@ -643,17 +659,12 @@ function tick(now) {
       if (steps >= 8) acc = 0;
     } else {
       acc = 0;
-      if (st !== 'paused') level.step(dt, { left: false, right: false, jumpHeld: false, jumpPressed: false });
+      // the world holds still behind the artifact card, so nothing can walk into the player meanwhile
+      if (st !== 'paused' && st !== 'artifact') level.step(dt, { left: false, right: false, jumpHeld: false, jumpPressed: false });
     }
 
     // timers for transient states
     if (st === 'dying') { S.timer += dt; if (S.timer > 1.6) afterDeath(); }
-    if (st === 'cinematic') {
-      S.timer += dt;
-      const T = S.timer;
-      if (T > 0.9 && !level.portal.active) { level.activatePortal(); audio.portalOn(); cam.shake = 0.3; }
-      if (T > 2.6) { S.state = 'playing'; audio.duckMusic(false); UI.toast('THE PORTAL HAS AWAKENED', 'gold', 'Reach the wormhole to leave this world.', 2.6); updateHud(); }
-    }
     if (st === 'warp') {
       S.timer += dt;
       const k = Math.min(1, S.timer / 1.4);
@@ -676,13 +687,6 @@ function tick(now) {
       const x = lerp(cam.fly.from, cam.fly.to, u);
       applyCamera(x - 4, 5.5, 30, x, 2.0, 0);
       cam.x = p.x + 4; cam.y = p.y + 2;
-    } else if (st === 'cinematic') {
-      const T = S.timer;
-      const P = level.portal;
-      const u = T < 1.0 ? T / 1.0 : T < 1.8 ? 1 : 1 - (T - 1.8) / 0.8;
-      const e = u * u * (3 - 2 * u);
-      const px = lerp(cam.x, P.x, e), py = lerp(cam.y, P.y, e);
-      applyCamera(px, py + 2.0 - e * 0.6, 20 - e * 5, px, py + 0.6, 0);
     } else {
       if (st === 'playing') updateCameraPlaying(dt);
       applyCamera(cam.x, cam.y + 2.0, 20, cam.x, cam.y + 0.6, 0);
